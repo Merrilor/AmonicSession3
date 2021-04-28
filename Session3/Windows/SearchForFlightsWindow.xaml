@@ -157,7 +157,7 @@
                     Width="70"
                     Height="30"
                     Content="Apply"
-                    Click="ApplyButton_Click_2" />
+                    Click="ApplyButton_Click" />
 
         </Grid>
 

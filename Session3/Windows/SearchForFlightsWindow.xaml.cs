@@ -28,6 +28,10 @@ namespace Session3
         //public List<FlightRoute> FlightRouteList { get; set; }
         //
 
+        public List<FlightRoute> OutboundRouteList { get; set; }
+
+        public List<FlightRoute> ReturnRouteList { get; set; }
+
         public List<Flight> FlightList;
 
         public List<Flight> FilteredFlightList { get; set; }
@@ -168,29 +172,22 @@ namespace Session3
                     return;
                 }
 
-                ReturnFlightList = 
-                FlightList
-                .Where(f => f.From == CurrentToFilter && f.To == CurrentFromFilter)
-                .Where(f => f.Date >= CurrentReturnDate.AddDays(-3) && f.Date <= CurrentReturnDate.AddDays(3))
-                .ToList();
+                ReturnRouteList = SelectRoutes(CurrentToFilter, CurrentFromFilter,CurrentReturnDate);
 
 
                 ReturnDataGrid.ItemsSource = ReturnCheckBox.IsChecked == false ?
-                    ReturnFlightList.Where(f => f.Date == CurrentReturnDate)
-                    : ReturnFlightList;
+                    SelectRoutes(ToComboBox.Text, FromComboBox.Text, CurrentReturnDate).Where(f=>f.Date == CurrentReturnDate)
+                    : ReturnRouteList;
 
             }
 
-            
-            OutboundFlightList = FlightList
-                .Where(f => f.From == CurrentFromFilter && f.To == CurrentToFilter)
-                .Where(f => f.Date >= CurrentOutboundDate.AddDays(-3) && f.Date <= CurrentOutboundDate.AddDays(3))
-                .ToList();
+
+            OutboundRouteList = SelectRoutes(CurrentFromFilter, CurrentToFilter, CurrentOutboundDate);
 
 
             OutboundDataGrid.ItemsSource = OutboundCheckBox.IsChecked == false ?
-                OutboundFlightList.Where(f => f.Date == CurrentOutboundDate)
-                : OutboundFlightList;
+                OutboundRouteList.Where(f => f.Date == CurrentOutboundDate)
+                : OutboundRouteList;
 
 
 
@@ -202,10 +199,10 @@ namespace Session3
 
         //TODO Change datagrid highlight color
 
-        private void OutboundCheckBox_Checked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundFlightList;
-        private void OutboundCheckBox_Unchecked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundFlightList is null ? null : OutboundFlightList.Where(f => f.Date == CurrentOutboundDate);
-        private void ReturnCheckBox_Checked(object sender, RoutedEventArgs e) => ReturnDataGrid.ItemsSource = ReturnFlightList;
-        private void ReturnCheckBox_Unchecked(object sender, RoutedEventArgs e) => ReturnDataGrid.ItemsSource = ReturnFlightList is null ? null : ReturnFlightList.Where(f => f.Date == CurrentReturnDate);
+        private void OutboundCheckBox_Checked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundRouteList;
+        private void OutboundCheckBox_Unchecked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundRouteList is null ? null : OutboundRouteList.Where(f => f.Date == CurrentOutboundDate);
+        private void ReturnCheckBox_Checked(object sender, RoutedEventArgs e) => ReturnDataGrid.ItemsSource = ReturnRouteList;
+        private void ReturnCheckBox_Unchecked(object sender, RoutedEventArgs e) => ReturnDataGrid.ItemsSource = ReturnRouteList is null ? null : ReturnRouteList.Where(f => f.Date == CurrentReturnDate);
         private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
         
 
@@ -228,202 +225,9 @@ namespace Session3
 
         }
 
-        private void ApplyButton_Click_2(object sender, RoutedEventArgs e)
-        {
+        
 
-            Session3Entities entities = new Session3Entities();
-            List<List<Schedules>> RoutesList = new List<List<Schedules>>();
-
-            string StartPoint = FromComboBox.Text;
-            string EndPoint = ToComboBox.Text;
-            DateTime OutboundDate = DateTime.Parse(OutboundTextBox.Text);
-
-            DateTime MaxDate = OutboundDate.AddDays(3);
-            DateTime MinDate = OutboundDate.AddDays(-3);
-
-            int AirportAmount = entities.Airports.Count();
-
-            var Connections1 = entities.Schedules.Where(s => s.Routes.Airports.IATACode == StartPoint && s.Date >= MinDate && s.Date <= MaxDate).ToList();
-
-            //Стартовые точки
-            foreach (var item in Connections1)
-            {
-                List<Schedules> startList = new List<Schedules>();
-                startList.Add(item);
-                RoutesList.Add(startList);
-            }
-
-            #region v1
-            //for (int i = 0; i < AirportAmount; i++)
-            //{
-
-            //    foreach (var ScheduleList in RoutesList)
-            //    {
-            //        var lastPoint = ScheduleList.Last();
-
-            //        var connections = entities.Schedules
-            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && lastPoint.Routes.Airports1.IATACode != EndPoint).ToList();
-
-            //        bool Inserted = false;
-            //        foreach (var schedule in connections)
-            //        {
-            //            if(Inserted == false)
-            //            {
-            //                ScheduleList.Add(schedule);
-            //                Inserted = true;
-            //            }
-            //            else
-            //            {
-            //                List<Schedules> list = new List<Schedules>();
-            //                list.AddRange(ScheduleList);
-            //                list.Add(schedule);
-
-            //                RoutesList.Add(list);
-            //            }
-
-
-            //        }
-
-            //    }
-
-
-            //}
-            #endregion
-
-            #region v2
-            //for (int i = 0; i < AirportAmount; i++)
-            //{
-
-            //    for (int j = RoutesList.Count -1; j>=0; j--)
-            //    {
-            //        //get last point of the route
-            //        var lastPoint = RoutesList[j].Last();
-
-            //        // if it's completed route,continue
-            //        if(lastPoint.Routes.Airports1.IATACode == EndPoint)
-            //        {
-            //            continue;
-            //        }
-
-
-            //        var connections = entities.Schedules
-            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && s.Routes.Airports1.IATACode != lastPoint.Routes.Airports.IATACode).ToList();
-
-            //        bool Inserted = false;
-            //        foreach (var schedule in connections)
-            //        {
-            //            //modify current route
-            //            if (Inserted == false)
-            //            {
-            //                RoutesList[j].Add(schedule);
-            //                Inserted = true;
-            //            }
-            //            //add new route if already modified
-            //            else
-            //            {
-            //                List<Schedules> list = new List<Schedules>();
-            //                list.AddRange(RoutesList[j]);
-            //                list.Add(schedule);
-
-            //                RoutesList.Add(list);
-            //            }
-
-
-            //        }
-
-            //    }
-
-
-            //}
-            #endregion
-
-
-            for (int i = 0; i < AirportAmount; i++)
-            {
-
-                for (int j = RoutesList.Count - 1; j >= 0; j--)
-                {
-                    //get last point of the route
-                    var lastPoint = RoutesList[j].Last();
-
-                    // if it's completed route,continue
-                    if (lastPoint.Routes.Airports1.IATACode == EndPoint)
-                    {
-                        continue;
-                    }
-
-
-                    var connections = entities.Schedules
-                        .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == lastPoint.Date  && s.Routes.Airports1.IATACode != lastPoint.Routes.Airports.IATACode).ToList();
-
-                    bool Inserted = false;
-                    foreach (var schedule in connections)
-                    {
-                        //modify current route
-                        if (Inserted == false)
-                        {
-                            RoutesList[j].Add(schedule);
-                            Inserted = true;
-                        }
-                        //add new route if already modified
-                        else
-                        {
-                            List<Schedules> list = new List<Schedules>();
-                            list.AddRange(RoutesList[j]);
-                            list.Add(schedule);
-
-                            RoutesList.Add(list);
-                        }
-
-
-                    }
-
-                }
-
-
-            }
-
-            //Discard routes with wrong end point
-            RoutesList = RoutesList.Where(l => l.Last().Routes.Airports1.IATACode == EndPoint).ToList();
-
-            
-
-            FlightRouteList = RoutesList.Select(l => new FlightRoute
-            {
-
-                IdList = l.Select(r => r.ID).ToList(),
-
-                FromList = l.Select(r => r.Routes.Airports.IATACode).ToList(),
-
-                ToList = l.Select(r => r.Routes.Airports1.IATACode).ToList(),
-
-                Date = l.First().Date,
-
-                Time = l.First().Time,
-
-                FlightNumber = l.Select(r => r.FlightNumber).ToList(),
-
-                EconomyPrice = l.Last().EconomyPrice,
-                BusinessPrice = l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35),
-                FirstClassPrice = (l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) + ((l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) / 100 * 30),
-
-                NumberOfStops = l.Count() - 1,
-                DisplayDestination = l.Last().Routes.Airports1.IATACode,
-                DisplayFlightNumber = string.Join(" ] - [ ",l.Select(r=>r.FlightNumber)),
-                
-                
-
-
-            }).ToList();
-
-            OutboundDataGrid.ItemsSource = FlightRouteList;
-            
-            
-
-        }
-
-
-        private List<FlightRoute> SelectRoutes(string startPoint, string endPoint)
+        private List<FlightRoute> SelectRoutes(string startPoint, string endPoint, DateTime outboundDate)
         {
 
 
@@ -432,7 +236,7 @@ namespace Session3
 
             string StartPoint = startPoint;
             string EndPoint = endPoint;
-            DateTime OutboundDate = DateTime.Parse(OutboundTextBox.Text);
+            DateTime OutboundDate = outboundDate;
 
             DateTime MaxDate = OutboundDate.AddDays(3);
             DateTime MinDate = OutboundDate.AddDays(-3);
@@ -582,33 +386,21 @@ namespace Session3
             //Discard routes with wrong end point
             RoutesList = RoutesList.Where(l => l.Last().Routes.Airports1.IATACode == EndPoint).ToList();
 
-
-
             return RoutesList.Select(l => new FlightRoute
             {
 
                 IdList = l.Select(r => r.ID).ToList(),
-
                 FromList = l.Select(r => r.Routes.Airports.IATACode).ToList(),
-
                 ToList = l.Select(r => r.Routes.Airports1.IATACode).ToList(),
-
                 Date = l.First().Date,
-
                 Time = l.First().Time,
-
                 FlightNumber = l.Select(r => r.FlightNumber).ToList(),
-
                 EconomyPrice = l.Last().EconomyPrice,
                 BusinessPrice = l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35),
                 FirstClassPrice = (l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) + ((l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) / 100 * 30),
-
                 NumberOfStops = l.Count() - 1,
                 DisplayDestination = l.Last().Routes.Airports1.IATACode,
                 DisplayFlightNumber = string.Join(" ] - [ ", l.Select(r => r.FlightNumber)),
-
-
-
 
             }).ToList();
 
