@@ -25,7 +25,7 @@ namespace Session3
         public List<string> CabinTypeList { get; set; }
 
         //
-        public List<FlightRoute> FlightRouteList { get; set; }
+        //public List<FlightRoute> FlightRouteList { get; set; }
         //
 
         public List<Flight> FlightList;
@@ -403,15 +403,217 @@ namespace Session3
 
                 FlightNumber = l.Select(r => r.FlightNumber).ToList(),
 
-                EconomyPrice = l.Sum(r => r.EconomyPrice),
+                EconomyPrice = l.Last().EconomyPrice,
+                BusinessPrice = l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35),
+                FirstClassPrice = (l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) + ((l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) / 100 * 30),
 
-                NumberOfStops = l.Count() - 1
+                NumberOfStops = l.Count() - 1,
+                DisplayDestination = l.Last().Routes.Airports1.IATACode,
+                DisplayFlightNumber = string.Join(" ] - [ ",l.Select(r=>r.FlightNumber)),
+                
+                
 
 
             }).ToList();
 
+            OutboundDataGrid.ItemsSource = FlightRouteList;
+            
+            
+
+        }
+
+
+        private List<FlightRoute> SelectRoutes(string startPoint, string endPoint)
+        {
+
+
+            Session3Entities entities = new Session3Entities();
+            List<List<Schedules>> RoutesList = new List<List<Schedules>>();
+
+            string StartPoint = startPoint;
+            string EndPoint = endPoint;
+            DateTime OutboundDate = DateTime.Parse(OutboundTextBox.Text);
+
+            DateTime MaxDate = OutboundDate.AddDays(3);
+            DateTime MinDate = OutboundDate.AddDays(-3);
+
+            int AirportAmount = entities.Airports.Count();
+
+            var Connections1 = entities.Schedules.Where(s => s.Routes.Airports.IATACode == StartPoint && s.Date >= MinDate && s.Date <= MaxDate).ToList();
+
+            //Стартовые точки
+            foreach (var item in Connections1)
+            {
+                List<Schedules> startList = new List<Schedules>();
+                startList.Add(item);
+                RoutesList.Add(startList);
+            }
+
+            #region v1
+            //for (int i = 0; i < AirportAmount; i++)
+            //{
+
+            //    foreach (var ScheduleList in RoutesList)
+            //    {
+            //        var lastPoint = ScheduleList.Last();
+
+            //        var connections = entities.Schedules
+            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && lastPoint.Routes.Airports1.IATACode != EndPoint).ToList();
+
+            //        bool Inserted = false;
+            //        foreach (var schedule in connections)
+            //        {
+            //            if(Inserted == false)
+            //            {
+            //                ScheduleList.Add(schedule);
+            //                Inserted = true;
+            //            }
+            //            else
+            //            {
+            //                List<Schedules> list = new List<Schedules>();
+            //                list.AddRange(ScheduleList);
+            //                list.Add(schedule);
+
+            //                RoutesList.Add(list);
+            //            }
+
+
+            //        }
+
+            //    }
+
+
+            //}
+            #endregion
+
+            #region v2
+            //for (int i = 0; i < AirportAmount; i++)
+            //{
+
+            //    for (int j = RoutesList.Count -1; j>=0; j--)
+            //    {
+            //        //get last point of the route
+            //        var lastPoint = RoutesList[j].Last();
+
+            //        // if it's completed route,continue
+            //        if(lastPoint.Routes.Airports1.IATACode == EndPoint)
+            //        {
+            //            continue;
+            //        }
+
+
+            //        var connections = entities.Schedules
+            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && s.Routes.Airports1.IATACode != lastPoint.Routes.Airports.IATACode).ToList();
+
+            //        bool Inserted = false;
+            //        foreach (var schedule in connections)
+            //        {
+            //            //modify current route
+            //            if (Inserted == false)
+            //            {
+            //                RoutesList[j].Add(schedule);
+            //                Inserted = true;
+            //            }
+            //            //add new route if already modified
+            //            else
+            //            {
+            //                List<Schedules> list = new List<Schedules>();
+            //                list.AddRange(RoutesList[j]);
+            //                list.Add(schedule);
+
+            //                RoutesList.Add(list);
+            //            }
+
+
+            //        }
+
+            //    }
+
+
+            //}
+            #endregion
+
+
+            for (int i = 0; i < AirportAmount; i++)
+            {
+
+                for (int j = RoutesList.Count - 1; j >= 0; j--)
+                {
+                    //get last point of the route
+                    var lastPoint = RoutesList[j].Last();
+
+                    // if it's completed route,continue
+                    if (lastPoint.Routes.Airports1.IATACode == EndPoint)
+                    {
+                        continue;
+                    }
+
+
+                    var connections = entities.Schedules
+                        .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == lastPoint.Date && s.Routes.Airports1.IATACode != lastPoint.Routes.Airports.IATACode).ToList();
+
+                    bool Inserted = false;
+                    foreach (var schedule in connections)
+                    {
+                        //modify current route
+                        if (Inserted == false)
+                        {
+                            RoutesList[j].Add(schedule);
+                            Inserted = true;
+                        }
+                        //add new route if already modified
+                        else
+                        {
+                            List<Schedules> list = new List<Schedules>();
+                            list.AddRange(RoutesList[j]);
+                            list.Add(schedule);
+
+                            RoutesList.Add(list);
+                        }
+
+
+                    }
+
+                }
+
+
+            }
+
+            //Discard routes with wrong end point
+            RoutesList = RoutesList.Where(l => l.Last().Routes.Airports1.IATACode == EndPoint).ToList();
+
+
+
+            return RoutesList.Select(l => new FlightRoute
+            {
+
+                IdList = l.Select(r => r.ID).ToList(),
+
+                FromList = l.Select(r => r.Routes.Airports.IATACode).ToList(),
+
+                ToList = l.Select(r => r.Routes.Airports1.IATACode).ToList(),
+
+                Date = l.First().Date,
+
+                Time = l.First().Time,
+
+                FlightNumber = l.Select(r => r.FlightNumber).ToList(),
+
+                EconomyPrice = l.Last().EconomyPrice,
+                BusinessPrice = l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35),
+                FirstClassPrice = (l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) + ((l.Last().EconomyPrice + (l.Last().EconomyPrice / 100 * 35)) / 100 * 30),
+
+                NumberOfStops = l.Count() - 1,
+                DisplayDestination = l.Last().Routes.Airports1.IATACode,
+                DisplayFlightNumber = string.Join(" ] - [ ", l.Select(r => r.FlightNumber)),
+
+
+
+
+            }).ToList();
 
             
+
 
         }
 
@@ -436,7 +638,18 @@ namespace Session3
 
         public decimal EconomyPrice { get; set; }
 
+        public decimal BusinessPrice { get; set; }
+
+        public decimal FirstClassPrice { get; set; }
+
         public int NumberOfStops { get; set; }
+
+
+        public string DisplayDestination { get; set; }
+
+        public string DisplayFlightNumber { get; set; }
+
+        
 
     }
 

@@ -214,34 +214,34 @@
             <DataGrid.Columns>
 
                 <DataGridTextColumn Header="From"
-                                    Binding="{Binding From}" />
+                                    Binding="{Binding FromList[0]}" />
 
                 <DataGridTextColumn Header="To"
-                                    Binding="{Binding To}" />
+                                    Binding="{Binding DisplayDestination}" />
 
                 <DataGridTextColumn Header="Date"
                                     Binding="{Binding Date, StringFormat='{}{0:dd/MM/yyyy}'}" />
 
                 <DataGridTextColumn Header="Time"
-                                    Binding="{Binding Time}" />
+                                    Binding="{Binding Time, StringFormat={}{0:hh':'mm}}" />
 
                 <DataGridTextColumn Header="Flight Number(s)"
-                                    Binding="{Binding FlightNumber}" />
+                                    Binding="{Binding DisplayFlightNumber, StringFormat='{}[ {0} ]'}" />
 
                 <DataGridTextColumn Header="CabinPrice"
-                                    Binding="{Binding EconomyPrice}"
+                                    Binding="{Binding EconomyPrice,StringFormat='{}${0:0.}'}"
                                     x:Name="EconomyPriceColumn" 
                                     Visibility="Collapsed"
                                     />
                 <DataGridTextColumn Header="CabinPrice"
-                                    Binding="{Binding BusinessPrice}"
+                                    Binding="{Binding BusinessPrice,StringFormat='{}${0:0.}'}"
                                     x:Name="BusinessPriceColumn" 
                                     Visibility="Collapsed"
                                     
                                     />
 
                 <DataGridTextColumn Header="CabinPrice"
-                                    Binding="{Binding FirstClassPrice}"
+                                    Binding="{Binding FirstClassPrice,StringFormat='{}${0:0.}'}"
                                     x:Name="FirstClassPriceColumn" />
 
 
