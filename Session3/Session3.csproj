@@ -80,6 +80,14 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Windows\BillingConfirmationWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\BookingConfirmation.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Windows\SearchForFlightsWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -132,6 +140,12 @@
     </Compile>
     <Compile Include="Users.cs">
       <DependentUpon>Session3Model.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\BillingConfirmationWindow.xaml.cs">
+      <DependentUpon>BillingConfirmationWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\BookingConfirmation.xaml.cs">
+      <DependentUpon>BookingConfirmation.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\SearchForFlightsWindow.xaml.cs">
       <DependentUpon>SearchForFlightsWindow.xaml</DependentUpon>

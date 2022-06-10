@@ -24,18 +24,13 @@ namespace Session3
         public List<string> AirportList { get; set; }
         public List<string> CabinTypeList { get; set; }
 
-        //
-        //public List<FlightRoute> FlightRouteList { get; set; }
-        //
+        //TODO: Cleanup, ReturnDataGrid
 
         public List<FlightRoute> OutboundRouteList { get; set; }
 
         public List<FlightRoute> ReturnRouteList { get; set; }
 
-        public List<Flight> FlightList;
-
-        public List<Flight> FilteredFlightList { get; set; }
-
+        
         public string CurrentFromFilter = "AUH";
 
         public string CurrentToFilter = "AUH";
@@ -44,20 +39,15 @@ namespace Session3
 
         public DateTime CurrentReturnDate;
 
-        public List<Flight> OutboundFlightList;
+        public int CurrentCabinTypeIndex;
 
-        public List<Flight> ReturnFlightList;
-
+        
 
         public SearchForFlightsWindow()
         {
             LoadValues();
             InitializeComponent();
-            DataContext = this;
-
-            SelectFlights();
-
-
+            DataContext = this;          
         }
 
         public void LoadValues()
@@ -70,50 +60,31 @@ namespace Session3
 
         }
 
-        public void SelectFlights()
-        {
-            Session3Entities entities = new Session3Entities();
-
-            FlightList = entities.Schedules.Select(f => new Flight
-            {
-                Id = f.ID,
-                From = f.Routes.Airports.IATACode,
-                To = f.Routes.Airports1.IATACode,
-                Date = f.Date,
-                Time = f.Time,
-                FlightNumber = f.FlightNumber,
-                EconomyPrice = f.EconomyPrice,
-                BusinessPrice = f.EconomyPrice + (f.EconomyPrice / 100 * 35),
-                FirstClassPrice = (f.EconomyPrice + (f.EconomyPrice / 100 * 35)) + ((f.EconomyPrice + (f.EconomyPrice / 100 * 35)) / 100 * 30),
-                NumberOfStops = 0
-
-            }).ToList();
-
-            FilteredFlightList = FlightList;
-
-            
-
-
-        }
+       
 
         private void ChangeColumnVisibility()
         {
             EconomyPriceColumn.Visibility = Visibility.Collapsed;
             BusinessPriceColumn.Visibility = Visibility.Collapsed;
             FirstClassPriceColumn.Visibility = Visibility.Collapsed;
+            EconomyPriceColumnReturn.Visibility = Visibility.Collapsed;
+            BusinessPriceColumnReturn.Visibility = Visibility.Collapsed;
+            FirstClassPriceColumnReturn.Visibility = Visibility.Collapsed;
 
-
-            switch (CabinTypeComboBox.SelectedIndex)
+            switch (CurrentCabinTypeIndex)
             {
 
                 case 0:
                     EconomyPriceColumn.Visibility = Visibility.Visible;
+                    EconomyPriceColumnReturn.Visibility = Visibility.Visible;
                     break;
                 case 1:
                     BusinessPriceColumn.Visibility = Visibility.Visible;
+                    BusinessPriceColumnReturn.Visibility = Visibility.Visible;
                     break;
                 case 2:
                     FirstClassPriceColumn.Visibility = Visibility.Visible;
+                    FirstClassPriceColumnReturn.Visibility = Visibility.Visible;
                     break;
                 default:
                     MessageBox.Show("Ошибка");
@@ -125,9 +96,7 @@ namespace Session3
 
         }
 
-        //private void FromComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => CurrentFromFilter = e.AddedItems[0].ToString();
-        //private void ToComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => CurrentToFilter = e.AddedItems[0].ToString();
-
+       
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             if (OutboundTextBox.Text == string.Empty || (ReturnTextBox.Text == string.Empty && (bool)BookingTypeReturn.IsChecked))
@@ -135,6 +104,8 @@ namespace Session3
                 MessageBox.Show("Введены не все значения");
                 return;
             }
+
+            CurrentCabinTypeIndex = CabinTypeComboBox.SelectedIndex;
 
             //Get Destination filters
             CurrentFromFilter = FromComboBox.Text;
@@ -191,13 +162,13 @@ namespace Session3
 
 
 
-            //TODO Route search
+            
             
             
 
         }
 
-        //TODO Change datagrid highlight color
+       
 
         private void OutboundCheckBox_Checked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundRouteList;
         private void OutboundCheckBox_Unchecked(object sender, RoutedEventArgs e) => OutboundDataGrid.ItemsSource = OutboundRouteList is null ? null : OutboundRouteList.Where(f => f.Date == CurrentOutboundDate);
@@ -206,26 +177,6 @@ namespace Session3
         private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
         
 
-        private void ApplyButton_Click_1(object sender, RoutedEventArgs e)
-        {
-            Session3Entities entities = new Session3Entities();
-            DateTime outboundDate = DateTime.Parse(OutboundTextBox.Text);
-
-            //1 Create list of possible start destinations
-            //Iterate throught list to find routes that lead to destination
-
-            // ?
-            //var relations2 = entities.Schedules.Where(s => relations.Any(g => g == s.Routes.Airports.IATACode && s.Routes.Airports1.IATACode != FromComboBox.Text && s.Date == outboundDate)).ToList();
-
-            var relations = entities.Schedules.Where(s => s.Routes.Airports.IATACode == FromComboBox.Text && s.Date == outboundDate).Select(r=>r.Routes.Airports1.IATACode).ToList();
-            var relations2 = entities.Schedules.Where(s => relations.Any(g => g == s.Routes.Airports.IATACode && s.Routes.Airports1.IATACode != FromComboBox.Text && s.Date == outboundDate)).Select(r=>r.Routes.Airports1.IATACode).ToList();
-            var relations3 = entities.Schedules.Where(s => relations2.Any(g => g == s.Routes.Airports.IATACode && s.Routes.Airports1.IATACode != FromComboBox.Text && s.Date == outboundDate)).ToList();
-
-            List<Schedules> VisitedSchedule = new List<Schedules>();
-
-        }
-
-        
 
         private List<FlightRoute> SelectRoutes(string startPoint, string endPoint, DateTime outboundDate)
         {
@@ -253,89 +204,7 @@ namespace Session3
                 RoutesList.Add(startList);
             }
 
-            #region v1
-            //for (int i = 0; i < AirportAmount; i++)
-            //{
-
-            //    foreach (var ScheduleList in RoutesList)
-            //    {
-            //        var lastPoint = ScheduleList.Last();
-
-            //        var connections = entities.Schedules
-            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && lastPoint.Routes.Airports1.IATACode != EndPoint).ToList();
-
-            //        bool Inserted = false;
-            //        foreach (var schedule in connections)
-            //        {
-            //            if(Inserted == false)
-            //            {
-            //                ScheduleList.Add(schedule);
-            //                Inserted = true;
-            //            }
-            //            else
-            //            {
-            //                List<Schedules> list = new List<Schedules>();
-            //                list.AddRange(ScheduleList);
-            //                list.Add(schedule);
-
-            //                RoutesList.Add(list);
-            //            }
-
-
-            //        }
-
-            //    }
-
-
-            //}
-            #endregion
-
-            #region v2
-            //for (int i = 0; i < AirportAmount; i++)
-            //{
-
-            //    for (int j = RoutesList.Count -1; j>=0; j--)
-            //    {
-            //        //get last point of the route
-            //        var lastPoint = RoutesList[j].Last();
-
-            //        // if it's completed route,continue
-            //        if(lastPoint.Routes.Airports1.IATACode == EndPoint)
-            //        {
-            //            continue;
-            //        }
-
-
-            //        var connections = entities.Schedules
-            //            .Where(s => s.Routes.Airports.IATACode == lastPoint.Routes.Airports1.IATACode && s.Date == OutboundDate && s.Routes.Airports1.IATACode != lastPoint.Routes.Airports.IATACode).ToList();
-
-            //        bool Inserted = false;
-            //        foreach (var schedule in connections)
-            //        {
-            //            //modify current route
-            //            if (Inserted == false)
-            //            {
-            //                RoutesList[j].Add(schedule);
-            //                Inserted = true;
-            //            }
-            //            //add new route if already modified
-            //            else
-            //            {
-            //                List<Schedules> list = new List<Schedules>();
-            //                list.AddRange(RoutesList[j]);
-            //                list.Add(schedule);
-
-            //                RoutesList.Add(list);
-            //            }
-
-
-            //        }
-
-            //    }
-
-
-            //}
-            #endregion
+           
 
 
             for (int i = 0; i < AirportAmount; i++)
@@ -409,6 +278,84 @@ namespace Session3
 
         }
 
+        private void BookFlightButton_Click(object sender, RoutedEventArgs e)
+        {
+            if(PassengerAmountTextBox.Text == string.Empty)
+            {
+                MessageBox.Show("Не введено количество пассажиров","Ошибка",MessageBoxButton.OK,MessageBoxImage.Error);
+                return;
+            }
+            
+            if(OutboundDataGrid.SelectedItem is null)
+            {
+                MessageBox.Show("Не выбран вариант вылета", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if(BookingTypeOneWay.IsChecked != true && ReturnDataGrid.SelectedItem is null)
+            {
+                MessageBox.Show("Не выбран вариант возвращения", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+
+            FlightRoute SelectedOutboundRoute = (FlightRoute)OutboundDataGrid.SelectedItem;
+            FlightRoute SelectedReturnRoute = BookingTypeOneWay.IsChecked == true ? null : (FlightRoute)ReturnDataGrid.SelectedItem;
+
+            
+
+            Session3Entities entities = new Session3Entities();
+
+            foreach (var id in SelectedOutboundRoute.IdList)
+            {
+                int SeatsTaken = entities.Tickets
+                    .Where(ticket => ticket.ScheduleID == id && ticket.CabinTypeID == CurrentCabinTypeIndex + 1)
+                    .Count();
+
+                int AvailableSeats;
+
+                switch (CurrentCabinTypeIndex)
+                {
+                    case 0:
+                        AvailableSeats = entities.Schedules.Where(s => s.ID == id).Single().Aircrafts.EconomySeats;
+                        break;
+                    case 1:
+                        AvailableSeats = entities.Schedules.Where(s => s.ID == id).Single().Aircrafts.BusinessSeats;
+                        break;
+                    case 2:
+                        Aircrafts aircraft = entities.Schedules.Where(s => s.ID == id).Single().Aircrafts;
+                        AvailableSeats = aircraft.TotalSeats - aircraft.EconomySeats - aircraft.BusinessSeats;
+                        break;
+                    default:
+                        MessageBox.Show("Ошибка БД");
+                        return;
+
+                }
+
+                if(AvailableSeats - (int.Parse(PassengerAmountTextBox.Text) + SeatsTaken) <= 0)
+                {
+                    MessageBox.Show("На одном из выбранных маршрутов не хватает свободных мест", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+            }
+
+            
+
+            var nextWindow = new BookingConfirmation((FlightRoute)OutboundDataGrid.SelectedItem, (FlightRoute)ReturnDataGrid.SelectedItem, CurrentCabinTypeIndex,PassengerAmountTextBox.Text);
+            nextWindow.ShowDialog();
+           
+
+        }
+
+        private void DigitTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            char character = (char)KeyInterop.VirtualKeyFromKey(e.Key);
+
+            if (!char.IsDigit(character) && e.Key != Key.Back)
+                e.Handled = true;
+
+        }
     }
 
 
@@ -445,28 +392,6 @@ namespace Session3
 
     }
 
-    public class Flight
-    {
-
-        public int Id { get; set; }
-        public string From { get; set; }
-
-        public string To { get; set; }
-
-        public DateTime Date { get; set; }
-
-        public TimeSpan Time { get; set; }
-
-        public string FlightNumber { get; set; }
-
-        public decimal EconomyPrice { get; set; }
-        public decimal BusinessPrice { get; set; }
-
-        public decimal FirstClassPrice { get; set; }
-
-
-        public int NumberOfStops { get; set; }
-
-    }
+   
 
 }
